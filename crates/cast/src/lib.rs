@@ -881,10 +881,7 @@ impl<P: Provider<AnyNetwork> + Clone + Unpin> Cast<P> {
     ///
     /// First tries to fetch logs for the entire range. If that fails,
     /// falls back to concurrent chunked requests with rate limiting.
-    async fn get_logs_chunked(&self, filter: &Filter, chunk_size: u64) -> Result<Vec<Log>>
-    where
-        P: Clone + Unpin,
-    {
+    async fn get_logs_chunked(&self, filter: &Filter, chunk_size: u64) -> Result<Vec<Log>> {
         // Try the full range first
         if let Ok(logs) = self.provider.get_logs(filter).await {
             return Ok(logs);
@@ -902,10 +899,7 @@ impl<P: Provider<AnyNetwork> + Clone + Unpin> Cast<P> {
         &self,
         filter: &Filter,
         chunk_size: u64,
-    ) -> Result<Vec<Log>>
-    where
-        P: Clone + Unpin,
-    {
+    ) -> Result<Vec<Log>> {
         let (from_block, to_block) = Self::extract_block_range(filter);
         let (Some(from), Some(to)) = (from_block, to_block) else {
             return self.provider.get_logs(filter).await.map_err(Into::into);
