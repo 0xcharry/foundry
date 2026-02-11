@@ -27,7 +27,7 @@ impl BroadcastedState {
     pub async fn verify(self) -> Result<()> {
         let Self { args, script_config, build_data, mut sequence, .. } = self;
 
-        let verify = VerifyBundle::new(
+        let mut verify = VerifyBundle::new(
             &script_config.config.project()?,
             &script_config.config,
             build_data.known_contracts,
@@ -36,7 +36,7 @@ impl BroadcastedState {
         );
 
         for sequence in sequence.sequences_mut() {
-            verify_contracts(sequence, &script_config.config, verify.clone()).await?;
+            verify_contracts(sequence, &script_config.config, &mut verify).await?;
         }
 
         Ok(())
@@ -180,7 +180,7 @@ impl VerifyBundle {
 async fn verify_contracts(
     sequence: &mut ScriptSequence,
     config: &Config,
-    mut verify: VerifyBundle,
+    verify: &mut VerifyBundle,
 ) -> Result<()> {
     trace!(target: "script", "verifying {} contracts [{}]", verify.known_contracts.len(), sequence.chain);
 
@@ -267,7 +267,7 @@ async fn verify_contracts(
 fn check_unverified(
     sequence: &ScriptSequence,
     unverifiable_contracts: Vec<Address>,
-    verify: VerifyBundle,
+    verify: &VerifyBundle,
 ) {
     if !unverifiable_contracts.is_empty() {
         let _ = sh_warn!(
@@ -281,7 +281,8 @@ fn check_unverified(
             let current_commit = verify
                 .project_paths
                 .root
-                .map(|root| get_commit_hash(&root).unwrap_or_default())
+                .as_ref()
+                .map(|root| get_commit_hash(root).unwrap_or_default())
                 .unwrap_or_default();
 
             if &current_commit != commit {
