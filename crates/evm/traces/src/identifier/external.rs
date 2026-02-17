@@ -141,8 +141,8 @@ impl ExternalIdentifier {
         let abi = metadata.abi().ok().map(Cow::Owned);
         IdentifiedAddress {
             address,
-            label: Some(label.clone()),
-            contract: Some(label),
+            contract: Some(label.clone()),
+            label: Some(label),
             abi,
             artifact_id: None,
         }
@@ -416,6 +416,8 @@ impl ExternalFetcherT for SourcifyFetcher {
         let url = format!("{url}/{address}?fields=abi,compilation", url = self.url);
         let response = self.client.get(url).send().await?;
         let code = response.status();
+        let response: SourcifyResponse = response.json().await?;
+        trace!(target: "evm::traces::external", "Sourcify response for {address}: {response:#?}");
         match code.as_u16() {
             // Not verified.
             404 => return Err(EtherscanError::ContractCodeNotVerified(address)),
@@ -423,8 +425,6 @@ impl ExternalFetcherT for SourcifyFetcher {
             429 => return Err(EtherscanError::RateLimitExceeded),
             _ => {}
         }
-        let response: SourcifyResponse = response.json().await?;
-        trace!(target: "evm::traces::external", "Sourcify response for {address}: {response:#?}");
         match response {
             SourcifyResponse::Success(metadata) => Ok(Some(metadata.into())),
             SourcifyResponse::Error(error) => Err(EtherscanError::Unknown(format!("{error:#?}"))),
